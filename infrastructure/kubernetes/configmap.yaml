@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: puppet-report-dashboard-config
+  namespace: devops
+data:
+  NODE_ENV:              "production"
+  PORT:                  "8080"
+  DB_HOST:               "postgres-svc"
+  DB_PORT:               "5432"
+  LOG_LEVEL:             "info"
+  PUPPET_REPORT_FORMAT:  "json"

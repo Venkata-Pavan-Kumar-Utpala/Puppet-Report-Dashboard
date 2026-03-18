@@ -1,0 +1,67 @@
+stages:
+  - quality
+  - build
+  - test
+  - security
+  - deploy
+
+variables:
+  APP_NAME: "devops-project-puppet-report-dashboard"
+  DOCKER_IMAGE: "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHA"
+
+lint:
+  stage: quality
+  image: node:18-alpine
+  script:
+    - cd src/main && npm ci
+    - npm run lint || true
+  only: [ merge_requests, main ]
+
+docker-build:
+  stage: build
+  image: docker:latest
+  services: [ docker:dind ]
+  script:
+    - docker build -f infrastructure/docker/Dockerfile -t $DOCKER_IMAGE .
+    - docker tag $DOCKER_IMAGE $CI_REGISTRY_IMAGE:latest
+  only: [ main, develop ]
+
+unit-tests:
+  stage: test
+  image: node:18-alpine
+  script:
+    - cd src/main && npm ci
+    - npm test
+  artifacts:
+    when: always
+    paths: [ coverage/ ]
+    expire_in: 1 week
+
+trivy-scan:
+  stage: security
+  image:
+    name: aquasec/trivy:latest
+    entrypoint: [""]
+  script:
+    - trivy image --severity HIGH,CRITICAL $DOCKER_IMAGE || true
+  only: [ main ]
+
+deploy-staging:
+  stage: deploy
+  script:
+    - docker-compose -f infrastructure/docker/docker-compose.yml up -d
+  environment:
+    name: staging
+    url: http://staging.puppet-report-dashboard.local
+  only: [ develop ]
+
+deploy-production:
+  stage: deploy
+  script:
+    - kubectl apply -f infrastructure/kubernetes/
+    - kubectl rollout status deployment/puppet-report-dashboard -n devops
+  environment:
+    name: production
+    url: http://puppet-report-dashboard.local
+  when: manual
+  only: [ main ]
