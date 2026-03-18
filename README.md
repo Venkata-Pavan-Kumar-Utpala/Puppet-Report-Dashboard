@@ -340,23 +340,27 @@ trivy image devops-project-puppet-report-dashboard:latest
 ---
 
 ## Faculty Assessment
-
+ 
 ### Self-Assessment
-
+ 
 | Criteria | Max Marks | Self Score | Remarks |
 |----------|-----------|------------|---------|
-| Implementation | 4 | [ ] | [Comments] |
-| Documentation | 3 | [ ] | [Comments] |
-| Innovation | 2 | [ ] | [Comments] |
-| Presentation | 1 | [ ] | [Comments] |
-| Total | 10 | [ ] | |
-
+| Implementation | 4 | 4 | Full report receiver API, real-time dashboard, Docker, Kubernetes, and CI/CD all working |
+| Documentation | 3 | 3 | README, design document, user guide, API docs, and project plan all present |
+| Innovation | 2 | 2 | Resource drill-down modal, YAML+JSON ingestion, Puppet agent auto-config via manifest |
+| Presentation | 1 | 1 | Live demo with Postman showing real-time report ingestion and dashboard update |
+| Total | 10 | 10 | |
+ 
 ### Project Challenges
-1. [Challenge 1 and solution]
-2. [Challenge 2 and solution]
-3. [Challenge 3 and solution]
-
+ 
+1. **Helmet.js blocking frontend scripts** — Helmet's Content Security Policy was silently blocking Chart.js and all inline JavaScript, making the dashboard appear empty. Fixed by configuring Helmet to whitelist `cdn.jsdelivr.net` and allow `unsafe-inline`.
+ 
+2. **Docker volume mounts failing on Windows** — Relative paths like `./../../src` in `docker-compose.yml` failed to resolve on Windows, keeping the app container stuck in `Created` state. Fixed by removing the volume mounts since all source code is already baked into the image at build time.
+ 
+3. **`npm ci` failing inside Docker** — The Dockerfile used `npm ci` which requires a `package-lock.json` that was never committed. Fixed by replacing it with `npm install --omit=dev` which doesn't require a lockfile.
+ 
 ### Learnings
-- [Learning 1]
-- [Learning 2]
-- [Learning 3]
+ 
+- Helmet.js requires explicit CSP configuration when loading external scripts — security middleware can break your own frontend if not properly tuned.
+- Docker on Windows handles relative paths differently from Linux — always use named volumes or absolute paths in `docker-compose.yml`.
+- Infrastructure as Code makes the entire environment reproducible — bringing up the full stack with one command is the core value of DevOps.
