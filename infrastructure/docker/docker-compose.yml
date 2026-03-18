@@ -1,0 +1,49 @@
+services:
+  app:
+    build:
+      context: ../../
+      dockerfile: infrastructure/docker/Dockerfile
+    image: devops-project-puppet-report-dashboard:latest
+    container_name: puppet-report-dashboard-app
+    ports:
+      - "8080:8080"
+    environment:
+      - NODE_ENV=development
+      - DB_HOST=db
+      - DB_PORT=5432
+    depends_on:
+      - db
+    restart: unless-stopped
+    networks:
+      - puppet-net
+
+  db:
+    image: postgres:13
+    container_name: puppet-report-dashboard-db
+    environment:
+      - POSTGRES_DB=puppetdb
+      - POSTGRES_USER=puppetuser
+      - POSTGRES_PASSWORD=puppetpass
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - puppet-net
+    restart: unless-stopped
+
+  monitoring:
+    image: jasonrivers/nagios:latest
+    container_name: puppet-report-nagios
+    ports:
+      - "8081:80"
+    networks:
+      - puppet-net
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+
+networks:
+  puppet-net:
+    driver: bridge

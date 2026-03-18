@@ -1,0 +1,22 @@
+{
+  "host": "sample-node.example.com",
+  "status": "changed",
+  "time": "2025-10-01T10:00:00.000Z",
+  "puppet_version": "7.24.0",
+  "environment": "production",
+  "configuration_version": "1696150000",
+  "resources": {
+    "total": 100,
+    "changed": 3,
+    "failed": 0,
+    "skipped": 1,
+    "out_of_sync": 3
+  },
+  "resource_statuses": [
+    { "resource": "File[/etc/nginx/nginx.conf]", "status": "changed",   "changed": true,  "failed": false },
+    { "resource": "Service[nginx]",              "status": "changed",   "changed": true,  "failed": false },
+    { "resource": "Package[nodejs]",             "status": "unchanged", "changed": false, "failed": false },
+    { "resource": "User[deploy]",                "status": "skipped",   "changed": false, "failed": false },
+    { "resource": "File[/var/www/html]",         "status": "changed",   "changed": true,  "failed": false }
+  ]
+}

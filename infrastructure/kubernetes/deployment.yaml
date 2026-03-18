@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: puppet-report-dashboard
+  namespace: devops
+  labels:
+    app: puppet-report-dashboard
+    version: "1.0.0"
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: puppet-report-dashboard
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: puppet-report-dashboard
+    spec:
+      containers:
+        - name: puppet-report-dashboard
+          image: devops-project-puppet-report-dashboard:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: puppet-report-dashboard-config
+            - secretRef:
+                name: puppet-report-dashboard-secrets
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu:    "100m"
+            limits:
+              memory: "512Mi"
+              cpu:    "500m"
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          volumeMounts:
+            - name: logs
+              mountPath: /app/logs
+      volumes:
+        - name: logs
+          emptyDir: {}

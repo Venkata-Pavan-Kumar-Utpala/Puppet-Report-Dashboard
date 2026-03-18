@@ -1,0 +1,31 @@
+# Alert Rules - Puppet Report Dashboard
+# CSE3253 DevOps | Venkata Pavan Kumar Utpala | 23FE10CSE00388
+
+alerts:
+  - name: PuppetRunFailed
+    condition: report.status == 'failed'
+    severity: critical
+    message: "Puppet run FAILED on node {{ host }}"
+    channels: [email, slack]
+    cooldown_minutes: 5
+
+  - name: NodeUnreported
+    condition: hours_since_last_run > 2
+    severity: warning
+    message: "Node {{ host }} has not reported in {{ hours }} hours"
+    channels: [email]
+    cooldown_minutes: 60
+
+  - name: HighFailureRate
+    condition: failed_runs_last_hour > 5
+    severity: critical
+    message: "More than 5 Puppet run failures in the last hour"
+    channels: [email, slack]
+    cooldown_minutes: 15
+
+  - name: ResourcesDrifting
+    condition: report.resources.out_of_sync > 10
+    severity: warning
+    message: "Node {{ host }} has {{ value }} out-of-sync resources"
+    channels: [slack]
+    cooldown_minutes: 30

@@ -1,0 +1,106 @@
+pipeline {
+    agent any
+
+    parameters {
+        string(name: 'BRANCH', defaultValue: 'main', description: 'Branch to build')
+        choice(name: 'ENVIRONMENT', choices: ['dev', 'staging', 'prod'], description: 'Deployment environment')
+    }
+
+    environment {
+        DOCKER_REGISTRY = 'docker.io'
+        APP_NAME        = 'devops-project-puppet-report-dashboard'
+        VERSION         = "${env.BUILD_ID}"
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                git branch: "${params.BRANCH}", url: 'https://github.com/username/devops-project-puppet-report-dashboard.git'
+            }
+        }
+
+        stage('Code Quality') {
+            steps {
+                script {
+                    sh 'npm run lint || true'
+                    echo 'ESLint static analysis complete'
+                }
+            }
+        }
+
+        stage('Build') {
+            steps {
+                script {
+                    sh 'cd src/main && npm ci'
+                    sh "docker build -f infrastructure/docker/Dockerfile -t ${APP_NAME}:${VERSION} ."
+                    sh "docker tag ${APP_NAME}:${VERSION} ${APP_NAME}:latest"
+                }
+            }
+        }
+
+        stage('Test') {
+            steps {
+                script {
+                    sh 'cd src/main && npm test'
+                    sh 'cd src/main && npm run test:integration || true'
+                    sh 'python -m pytest tests/selenium/ || true'
+                }
+            }
+            post {
+                always {
+                    junit 'test-results/**/*.xml'
+                }
+            }
+        }
+
+        stage('Security Scan') {
+            steps {
+                script {
+                    sh "trivy image ${APP_NAME}:${VERSION} --severity HIGH,CRITICAL || true"
+                }
+            }
+        }
+
+        stage('Deploy to Staging') {
+            when {
+                expression { params.ENVIRONMENT == 'staging' }
+            }
+            steps {
+                script {
+                    sh "docker-compose -f infrastructure/docker/docker-compose.yml up -d"
+                    echo 'Deployed to staging'
+                }
+            }
+        }
+
+        stage('Deploy to Production') {
+            when {
+                expression { params.ENVIRONMENT == 'prod' }
+            }
+            steps {
+                input message: 'Deploy to production?', ok: 'Deploy'
+                script {
+                    sh "kubectl apply -f infrastructure/kubernetes/"
+                    sh "kubectl rollout status deployment/puppet-report-dashboard -n devops"
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            emailext(
+                subject: "Pipeline Successful: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                body: "The pipeline completed successfully.\n\nBuild URL: ${env.BUILD_URL}",
+                to: 'developer@example.com'
+            )
+        }
+        failure {
+            emailext(
+                subject: "Pipeline Failed: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                body: "The pipeline failed. Please check the logs.\n\nBuild URL: ${env.BUILD_URL}",
+                to: 'developer@example.com'
+            )
+        }
+    }
+}

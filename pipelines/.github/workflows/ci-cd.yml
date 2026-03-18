@@ -1,0 +1,73 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: src/main/package.json
+
+    - name: Install dependencies
+      run: cd src/main && npm ci
+
+    - name: Run linter
+      run: cd src/main && npm run lint || true
+
+    - name: Run tests
+      run: cd src/main && npm test
+
+    - name: Upload test results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: test-results
+        path: test-results/
+
+  build:
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Build Docker image
+      run: docker build -f infrastructure/docker/Dockerfile -t devops-project-puppet-report-dashboard:latest .
+
+    - name: Scan for vulnerabilities
+      run: |
+        curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
+        trivy image devops-project-puppet-report-dashboard:latest --severity HIGH,CRITICAL || true
+
+    - name: Upload Docker artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: docker-artifacts
+        path: |
+          infrastructure/docker/Dockerfile
+          infrastructure/docker/docker-compose.yml
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Deploy to staging
+      run: |
+        echo "Deploying puppet-report-dashboard to staging environment"
+        # Add deployment commands here

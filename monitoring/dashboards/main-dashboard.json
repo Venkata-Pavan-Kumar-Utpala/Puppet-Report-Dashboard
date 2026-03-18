@@ -1,0 +1,13 @@
+{
+  "title": "Puppet Report Dashboard — System Overview",
+  "refresh": "30s",
+  "panels": [
+    { "id": 1, "title": "Total Nodes",     "type": "stat",       "datasource": "/api/dashboard/summary", "field": "total_nodes" },
+    { "id": 2, "title": "Failed Nodes",    "type": "stat",       "datasource": "/api/dashboard/summary", "field": "nodes_failed" },
+    { "id": 3, "title": "Changed Nodes",   "type": "stat",       "datasource": "/api/dashboard/summary", "field": "nodes_changed" },
+    { "id": 4, "title": "Run Trends",      "type": "barchart",   "datasource": "/api/dashboard/trends" },
+    { "id": 5, "title": "Status Pie",      "type": "piechart",   "datasource": "/api/dashboard/summary" },
+    { "id": 6, "title": "Node Status",     "type": "table",      "datasource": "/api/nodes" },
+    { "id": 7, "title": "Recent Reports",  "type": "table",      "datasource": "/api/reports?limit=20" }
+  ]
+}
